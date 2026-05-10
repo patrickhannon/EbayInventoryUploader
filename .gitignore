@@ -1,0 +1,38 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Visual Studio
+.vs/
+.vscode/
+*.csproj.user
+
+# Rider
+.idea/
+
+# Credentials - NEVER COMMIT THESE!
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+
+# User data
+*.csv
+!sample-inventory.csv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

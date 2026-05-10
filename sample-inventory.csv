@@ -1,0 +1,4 @@
+Title,Description,Price,Quantity,CategoryId,SKU,Location,PostalCode
+Sample Product 1,High quality product with great features,29.99,10,261186,PROD-001,New York,10001
+Sample Product 2,Premium item with warranty included,49.99,5,261186,PROD-002,Los Angeles,90001
+Sample Product 3,Best seller in electronics category,19.99,20,261186,PROD-003,Chicago,60601
