@@ -145,7 +145,6 @@ public class WalmartBuyBoxMonitorService
         var maximumDropAmount = sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m);
         var recommendedPrice = Math.Max(_config.MinimumAllowedPrice, row.BuyBoxItemPrice);
         var wouldExceedMaxDrop = sellerLandedPrice - recommendedPrice > maximumDropAmount;
-        var wouldBreakFloor = recommendedPrice < _config.MinimumAllowedPrice;
 
         if (buyBoxLandedPrice < _config.MinimumAllowedPrice)
         {
@@ -154,7 +153,7 @@ public class WalmartBuyBoxMonitorService
             return result;
         }
 
-        result.RecommendedPrice = _config.RecommendPriceChanges && !wouldExceedMaxDrop && !wouldBreakFloor
+        result.RecommendedPrice = _config.RecommendPriceChanges && !wouldExceedMaxDrop
             ? recommendedPrice
             : null;
 

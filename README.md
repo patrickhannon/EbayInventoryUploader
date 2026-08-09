@@ -170,6 +170,8 @@ Available condition values:
 ### Walmart Buy Box Monitoring
 
 - `ClientId` / `ClientSecret` - Walmart Marketplace API credentials
+- `SellerId` - Walmart seller identifier used on report requests
+- `ConsumerChannelType` - Walmart consumer channel type/header value issued for your API access
 - `PollIntervalSeconds` - How often to poll report status
 - `MaxPollAttempts` - Maximum number of polling attempts before timeout
 - `MinimumAllowedPrice` - Price floor for alerts and recommendations

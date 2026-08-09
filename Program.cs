@@ -296,7 +296,7 @@ class Program
         {
             Console.WriteLine("Walmart API credentials are not configured.");
             Console.WriteLine("Update the WalmartApi section in appsettings.json before running this workflow.");
-            Console.WriteLine("You need a Walmart Marketplace client ID and client secret with Buy Box report access.");
+            Console.WriteLine("You need a Walmart Marketplace client ID, client secret, seller ID, and consumer channel type with Buy Box report access.");
             return;
         }
 

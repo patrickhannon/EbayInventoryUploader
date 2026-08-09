@@ -115,6 +115,8 @@ public class WalmartApiClient
         request.Headers.Add("WM_SEC.ACCESS_TOKEN", await GetAccessTokenAsync(cancellationToken));
         request.Headers.Add("WM_QOS.CORRELATION_ID", Guid.NewGuid().ToString());
         request.Headers.Add("WM_SVC.NAME", _config.ServiceName);
+        request.Headers.Add("WM_CONSUMER.ID", _config.SellerId);
+        request.Headers.Add("WM_CONSUMER.CHANNEL.TYPE", _config.ConsumerChannelType);
     }
 
     private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
