@@ -1,4 +1,4 @@
-namespace EbayInventoryUploader.Models;
+namespace MarketplaceInventoryManager.Models;
 
 public class WalmartMonitorResult
 {

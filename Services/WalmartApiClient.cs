@@ -2,9 +2,9 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using EbayInventoryUploader.Models;
+using MarketplaceInventoryManager.Models;
 
-namespace EbayInventoryUploader.Services;
+namespace MarketplaceInventoryManager.Services;
 
 public class WalmartApiClient
 {

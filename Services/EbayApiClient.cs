@@ -1,8 +1,8 @@
 using System.Text;
 using System.Xml.Linq;
-using EbayInventoryUploader.Models;
+using MarketplaceInventoryManager.Models;
 
-namespace EbayInventoryUploader.Services;
+namespace MarketplaceInventoryManager.Services;
 
 public class EbayApiClient
 {

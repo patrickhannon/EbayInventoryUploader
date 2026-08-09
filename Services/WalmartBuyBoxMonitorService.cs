@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text;
-using EbayInventoryUploader.Models;
+using MarketplaceInventoryManager.Models;
 
-namespace EbayInventoryUploader.Services;
+namespace MarketplaceInventoryManager.Services;
 
 public class WalmartBuyBoxMonitorService
 {

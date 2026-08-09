@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.Configuration;
-using EbayInventoryUploader.Models;
-using EbayInventoryUploader.Services;
+using MarketplaceInventoryManager.Models;
+using MarketplaceInventoryManager.Services;
 
-namespace EbayInventoryUploader;
+namespace MarketplaceInventoryManager;
 
 class Program
 {
     static async Task Main(string[] args)
     {
-        Console.WriteLine("=== eBay Inventory Uploader ===\n");
+        Console.WriteLine("=== Marketplace Inventory Manager ===\n");
 
         // Load configuration
         var configuration = new ConfigurationBuilder()
@@ -17,33 +17,30 @@ class Program
             .AddEnvironmentVariables()
             .Build();
 
-        var ebayConfig = configuration.GetSection("EbayApi").Get<EbayApiConfig>();
+        var ebayConfig = configuration.GetSection("EbayApi").Get<EbayApiConfig>() ?? new EbayApiConfig();
+        var amazonConfigSection = configuration.GetSection("AmazonApi");
         var walmartConfig = configuration.GetSection("WalmartApi").Get<WalmartApiConfig>() ?? new WalmartApiConfig();
-        
-        if (ebayConfig == null)
-        {
-            Console.WriteLine("Error: Unable to load eBay API configuration.");
-            return;
-        }
 
         // Validate configuration
-        if (string.IsNullOrEmpty(ebayConfig.ApplicationId) || ebayConfig.ApplicationId.Contains("YOUR_"))
+        if (!IsEbayConfigured(ebayConfig))
         {
-            Console.WriteLine("⚠️  WARNING: You need to configure your eBay API credentials in appsettings.json");
+            Console.WriteLine("⚠️  WARNING: eBay listing credentials are not configured.");
+            Console.WriteLine("eBay listing actions will stay unavailable until appsettings.json is updated.");
             Console.WriteLine("\nTo get started:");
             Console.WriteLine("1. Go to https://developer.ebay.com/");
             Console.WriteLine("2. Create a developer account");
             Console.WriteLine("3. Get your App ID, Dev ID, and Cert ID");
             Console.WriteLine("4. Generate a user token");
-            Console.WriteLine("5. Update the appsettings.json file with your credentials\n");
+            Console.WriteLine("5. Update the appsettings.json file with your credentials");
+            Console.WriteLine("6. Use menu option 6 to review marketplace-specific requirements\n");
             if (!Console.IsInputRedirected)
             {
-                Console.WriteLine("Press any key to continue with demo mode...");
+                Console.WriteLine("Press any key to continue...");
                 Console.ReadKey();
             }
             else
             {
-                Console.WriteLine("Continuing with demo mode...");
+                Console.WriteLine("Continuing...");
             }
         }
 
@@ -58,12 +55,13 @@ class Program
         while (true)
         {
             Console.WriteLine("\n--- Menu ---");
-            Console.WriteLine("1. Upload single item");
-            Console.WriteLine("2. Upload from CSV file");
-            Console.WriteLine("3. Verify item before upload");
-            Console.WriteLine("4. Test sample item");
-            Console.WriteLine("5. Monitor Walmart buy box");
-            Console.WriteLine("6. Exit");
+            Console.WriteLine("1. Upload single item to eBay");
+            Console.WriteLine("2. Upload inventory CSV to eBay");
+            Console.WriteLine("3. Verify eBay item before upload");
+            Console.WriteLine("4. Test sample eBay item");
+            Console.WriteLine("5. Monitor Walmart buy box prices");
+            Console.WriteLine("6. View marketplace requirements");
+            Console.WriteLine("7. Exit");
             Console.Write("\nSelect option: ");
 
             var choice = Console.ReadLine();
@@ -71,21 +69,40 @@ class Program
             switch (choice)
             {
                 case "1":
+                    if (!EnsureEbayConfigured(ebayConfig))
+                    {
+                        break;
+                    }
                     await UploadSingleItem(apiClient, ebayConfig);
                     break;
                 case "2":
+                    if (!EnsureEbayConfigured(ebayConfig))
+                    {
+                        break;
+                    }
                     await UploadFromCsv(apiClient, ebayConfig);
                     break;
                 case "3":
+                    if (!EnsureEbayConfigured(ebayConfig))
+                    {
+                        break;
+                    }
                     await VerifyItem(apiClient);
                     break;
                 case "4":
+                    if (!EnsureEbayConfigured(ebayConfig))
+                    {
+                        break;
+                    }
                     await TestSampleItem(apiClient, ebayConfig);
                     break;
                 case "5":
                     await MonitorWalmartBuyBox(walmartMonitorService);
                     break;
                 case "6":
+                    ShowMarketplaceRequirements(ebayConfig, amazonConfigSection, walmartConfig);
+                    break;
+                case "7":
                     Console.WriteLine("\nGoodbye!");
                     return;
                 default:
@@ -291,7 +308,7 @@ class Program
 
     static async Task MonitorWalmartBuyBox(WalmartBuyBoxMonitorService walmartMonitorService)
     {
-        Console.WriteLine("\n=== Walmart Buy Box Monitor ===");
+        Console.WriteLine("\n=== Walmart Buy Box Price Monitor ===");
 
         if (!walmartMonitorService.IsConfigured)
         {
@@ -437,4 +454,68 @@ class Program
             }
         };
     }
+
+    static bool EnsureEbayConfigured(EbayApiConfig ebayConfig)
+    {
+        if (IsEbayConfigured(ebayConfig))
+        {
+            return true;
+        }
+
+        Console.WriteLine("eBay listing credentials are missing.");
+        Console.WriteLine("Use menu option 6 to review the eBay, Amazon, and Walmart requirements.");
+        return false;
+    }
+
+    static bool IsEbayConfigured(EbayApiConfig ebayConfig) =>
+        !string.IsNullOrWhiteSpace(ebayConfig.ApplicationId) &&
+        !string.IsNullOrWhiteSpace(ebayConfig.CertId) &&
+        !string.IsNullOrWhiteSpace(ebayConfig.DevId) &&
+        !string.IsNullOrWhiteSpace(ebayConfig.UserToken) &&
+        !ebayConfig.ApplicationId.Contains("YOUR_", StringComparison.OrdinalIgnoreCase) &&
+        !ebayConfig.CertId.Contains("YOUR_", StringComparison.OrdinalIgnoreCase) &&
+        !ebayConfig.DevId.Contains("YOUR_", StringComparison.OrdinalIgnoreCase) &&
+        !ebayConfig.UserToken.Contains("YOUR_", StringComparison.OrdinalIgnoreCase);
+
+    static void ShowMarketplaceRequirements(EbayApiConfig ebayConfig, IConfigurationSection amazonConfigSection, WalmartApiConfig walmartConfig)
+    {
+        Console.WriteLine("\n=== Marketplace Requirements ===");
+
+        Console.WriteLine("\n[eBay listing]");
+        Console.WriteLine($"Status: {(IsEbayConfigured(ebayConfig) ? "Configured" : "Needs credentials")}");
+        Console.WriteLine("- ApplicationId (App ID)");
+        Console.WriteLine("- DevId");
+        Console.WriteLine("- CertId");
+        Console.WriteLine("- UserToken");
+        Console.WriteLine("- Category-specific listing data for each item");
+
+        Console.WriteLine("\n[Amazon marketplace]");
+        Console.WriteLine($"Status: {(AreSettingsConfigured(amazonConfigSection, "ClientId", "ClientSecret", "RefreshToken", "AwsAccessKeyId", "AwsSecretAccessKey", "RoleArn", "SellerId", "MarketplaceId") ? "Credentials captured" : "Requirements checklist only")}");
+        Console.WriteLine("Amazon integration is not implemented yet in this repository.");
+        Console.WriteLine("- LWA ClientId");
+        Console.WriteLine("- LWA ClientSecret");
+        Console.WriteLine("- RefreshToken");
+        Console.WriteLine("- AWS AccessKeyId / SecretAccessKey");
+        Console.WriteLine("- RoleArn");
+        Console.WriteLine("- SellerId");
+        Console.WriteLine("- MarketplaceId");
+
+        Console.WriteLine("\n[Walmart buy box price checks]");
+        Console.WriteLine($"Status: {(walmartConfig.IsConfigured() ? "Configured" : "Needs credentials")}");
+        Console.WriteLine("- ClientId");
+        Console.WriteLine("- ClientSecret");
+        Console.WriteLine("- SellerId");
+        Console.WriteLine("- ConsumerChannelType");
+        Console.WriteLine("- Buy Box report access enabled for your Walmart Marketplace account");
+        Console.WriteLine("- Optional filters: SKU or WalmartItemId CSV");
+        Console.WriteLine("- Optional pricing guardrails: MinimumAllowedPrice, MaximumPriceDropPercent, RecommendPriceChanges");
+    }
+
+    static bool AreSettingsConfigured(IConfigurationSection section, params string[] keys) =>
+        keys.All(key =>
+        {
+            var value = section[key];
+            return !string.IsNullOrWhiteSpace(value) &&
+                   !value.Contains("YOUR_", StringComparison.OrdinalIgnoreCase);
+        });
 }

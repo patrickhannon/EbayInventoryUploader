@@ -5,8 +5,8 @@ $projectPath = "D:\One drive phannon\OneDrive\_Docs\___Projects\EbayInventoryUpl
 Set-Location $projectPath
 
 # Check if DLL exists
-$dllPath = "$projectPath\bin\Debug\net10.0\EbayInventoryUploader.dll"
-$exePath = "$projectPath\bin\Debug\net10.0\EbayInventoryUploader.exe"
+$dllPath = "$projectPath\bin\Debug\net10.0\MarketplaceInventoryManager.dll"
+$exePath = "$projectPath\bin\Debug\net10.0\MarketplaceInventoryManager.exe"
 
 Write-Host "Checking build artifacts..." -ForegroundColor Yellow
 
@@ -32,7 +32,7 @@ Write-Host ""
 Write-Host "Running fresh build..." -ForegroundColor Yellow
 
 # Kill any running instances
-Stop-Process -Name "EbayInventoryUploader" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "MarketplaceInventoryManager" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 
