@@ -202,6 +202,7 @@ Available condition values:
 - `MinimumAllowedPrice` - Price floor for alerts and recommendations
 - `MaximumPriceDropPercent` - Largest suggested drop allowed before the app suppresses a recommendation
 - `RecommendPriceChanges` - When `true`, the app suggests a price to review; it never reprices automatically
+- `ReportDownloadAllowedHosts` - Optional allow-list for Walmart report download redirects
 
 The monitor uses Walmart's Buy Box report workflow:
 1. Request a `BUYBOX` report
@@ -256,7 +257,7 @@ Configure in `InventoryItem.cs`:
 ## Project Structure
 
 ```
-EbayInventoryUploader/
+MarketplaceInventoryManager/
 ├── MarketplaceInventoryManager.csproj
 ├── Program.cs                  # Main application entry point
 ├── appsettings.json            # Configuration file

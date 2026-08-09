@@ -13,6 +13,7 @@ public class WalmartApiConfig
     public decimal MinimumAllowedPrice { get; set; } = 0m;
     public decimal MaximumPriceDropPercent { get; set; } = 20m;
     public bool RecommendPriceChanges { get; set; } = false;
+    public string[] ReportDownloadAllowedHosts { get; set; } = [];
 
     public bool IsConfigured() =>
         !string.IsNullOrWhiteSpace(ClientId) &&

@@ -106,6 +106,8 @@ public class WalmartApiClient
                 ? response.Headers.Location
                 : new Uri(new Uri(_config.BaseUrl.TrimEnd('/') + "/"), response.Headers.Location);
 
+            ValidateReportDownloadUri(redirectUri);
+
             using var redirectedRequest = new HttpRequestMessage(HttpMethod.Get, redirectUri);
             using var redirectedResponse = await _httpClient.SendAsync(redirectedRequest, cancellationToken);
             var redirectedContent = await redirectedResponse.Content.ReadAsStringAsync(cancellationToken);
@@ -126,6 +128,31 @@ public class WalmartApiClient
         }
 
         return content;
+    }
+
+    private void ValidateReportDownloadUri(Uri redirectUri)
+    {
+        if (!string.Equals(redirectUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Walmart report download redirect must use HTTPS.");
+        }
+
+        var marketplaceHost = new Uri(_config.BaseUrl).Host;
+        var allowedHosts = new[]
+        {
+            marketplaceHost,
+            "walmartapis.com",
+            "walmart.com"
+        }
+        .Concat(_config.ReportDownloadAllowedHosts ?? [])
+        .Where(host => !string.IsNullOrWhiteSpace(host))
+        .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        if (!allowedHosts.Any(host => HostMatches(redirectUri.Host, host)))
+        {
+            throw new InvalidOperationException(
+                $"Walmart report download redirect host '{redirectUri.Host}' is not in the allowed host list.");
+        }
     }
 
     private async Task AddMarketplaceHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -230,5 +257,12 @@ public class WalmartApiClient
     {
         var statusCode = (int)response.StatusCode;
         return statusCode is 301 or 302 or 303 or 307 or 308;
+    }
+
+    private static bool HostMatches(string actualHost, string allowedHost)
+    {
+        var normalizedAllowedHost = allowedHost.Trim().TrimStart('.');
+        return actualHost.Equals(normalizedAllowedHost, StringComparison.OrdinalIgnoreCase) ||
+               actualHost.EndsWith($".{normalizedAllowedHost}", StringComparison.OrdinalIgnoreCase);
     }
 }
