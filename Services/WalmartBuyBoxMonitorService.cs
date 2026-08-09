@@ -150,9 +150,12 @@ public class WalmartBuyBoxMonitorService
             return result;
         }
 
-        var maximumDropAmount = sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m);
         var recommendedLandedPrice = Math.Max(_config.MinimumAllowedPrice, buyBoxLandedPrice);
-        var wouldExceedMaxDrop = sellerLandedPrice - recommendedLandedPrice > maximumDropAmount;
+        var maximumDropAmount = sellerLandedPrice > 0
+            ? sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m)
+            : decimal.MaxValue;
+        var wouldExceedMaxDrop = sellerLandedPrice > 0 &&
+                                 sellerLandedPrice - recommendedLandedPrice > maximumDropAmount;
         var recommendedItemPrice = Math.Max(0m, recommendedLandedPrice - row.SellerShippingPrice);
 
         result.RecommendedPrice = _config.RecommendPriceChanges && !wouldExceedMaxDrop

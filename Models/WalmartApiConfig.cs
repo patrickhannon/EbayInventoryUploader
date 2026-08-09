@@ -13,7 +13,6 @@ public class WalmartApiConfig
     public decimal MinimumAllowedPrice { get; set; } = 0m;
     public decimal MaximumPriceDropPercent { get; set; } = 20m;
     public bool RecommendPriceChanges { get; set; } = false;
-    public string AlertWebhookUrl { get; set; } = string.Empty;
 
     public bool IsConfigured() =>
         !string.IsNullOrWhiteSpace(ClientId) &&
