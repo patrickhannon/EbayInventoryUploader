@@ -39,7 +39,8 @@ public class WalmartBuyBoxMonitorService
 
         return rows
             .Select(EvaluateRow)
-            .OrderByDescending(result => result.AlertState is "LostBuyBox" or "BelowFloor")
+            .OrderBy(result => GetAlertPriority(result.AlertState))
+            .ThenBy(result => result.AlertState, StringComparer.OrdinalIgnoreCase)
             .ThenBy(result => result.Sku, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -142,10 +143,6 @@ public class WalmartBuyBoxMonitorService
             return result;
         }
 
-        var maximumDropAmount = sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m);
-        var recommendedPrice = Math.Max(_config.MinimumAllowedPrice, row.BuyBoxItemPrice);
-        var wouldExceedMaxDrop = sellerLandedPrice - recommendedPrice > maximumDropAmount;
-
         if (buyBoxLandedPrice < _config.MinimumAllowedPrice)
         {
             result.AlertState = "BelowFloor";
@@ -153,13 +150,18 @@ public class WalmartBuyBoxMonitorService
             return result;
         }
 
+        var maximumDropAmount = sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m);
+        var recommendedLandedPrice = Math.Max(_config.MinimumAllowedPrice, buyBoxLandedPrice);
+        var wouldExceedMaxDrop = sellerLandedPrice - recommendedLandedPrice > maximumDropAmount;
+        var recommendedItemPrice = Math.Max(0m, recommendedLandedPrice - row.SellerShippingPrice);
+
         result.RecommendedPrice = _config.RecommendPriceChanges && !wouldExceedMaxDrop
-            ? recommendedPrice
+            ? recommendedItemPrice
             : null;
 
         result.AlertState = "LostBuyBox";
         result.Recommendation = result.RecommendedPrice.HasValue
-            ? $"Consider reviewing price toward ${result.RecommendedPrice.Value:F2}."
+            ? $"Consider reviewing item price toward ${result.RecommendedPrice.Value:F2} with current shipping unchanged."
             : "You lost the buy box; review price or fulfillment settings before repricing.";
 
         return result;
@@ -240,6 +242,15 @@ public class WalmartBuyBoxMonitorService
         value.Equals("sku", StringComparison.OrdinalIgnoreCase) ||
         value.Equals("walmartitemid", StringComparison.OrdinalIgnoreCase) ||
         value.Equals("itemid", StringComparison.OrdinalIgnoreCase);
+
+    private static int GetAlertPriority(string alertState) => alertState switch
+    {
+        "BelowFloor" => 0,
+        "LostBuyBox" => 1,
+        "MissingData" => 2,
+        "Competitive" => 3,
+        _ => 4
+    };
 
     private static List<string> ParseCsvLine(string line)
     {

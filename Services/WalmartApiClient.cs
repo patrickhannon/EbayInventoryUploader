@@ -10,6 +10,7 @@ public class WalmartApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly WalmartApiConfig _config;
+    private readonly SemaphoreSlim _tokenRefreshLock = new(1, 1);
     private string? _accessToken;
     private DateTimeOffset _accessTokenExpiresUtc;
 
@@ -127,33 +128,47 @@ public class WalmartApiClient
             return _accessToken;
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"{_config.BaseUrl.TrimEnd('/')}/v3/token");
-        var authValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authValue);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Add("WM_QOS.CORRELATION_ID", Guid.NewGuid().ToString());
-        request.Headers.Add("WM_SVC.NAME", _config.ServiceName);
-        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        await _tokenRefreshLock.WaitAsync(cancellationToken);
+        try
         {
-            ["grant_type"] = "client_credentials"
-        });
+            if (!string.IsNullOrWhiteSpace(_accessToken) &&
+                _accessTokenExpiresUtc > DateTimeOffset.UtcNow.AddMinutes(1))
+            {
+                return _accessToken;
+            }
 
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{_config.BaseUrl.TrimEnd('/')}/v3/token");
+            var authValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authValue);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("WM_QOS.CORRELATION_ID", Guid.NewGuid().ToString());
+            request.Headers.Add("WM_SVC.NAME", _config.ServiceName);
+            request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "client_credentials"
+            });
 
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException($"Walmart token request failed: {(int)response.StatusCode} {response.ReasonPhrase} - {content}");
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"Walmart token request failed: {(int)response.StatusCode} {response.ReasonPhrase} - {content}");
+            }
+
+            using var document = JsonDocument.Parse(content);
+            _accessToken = FindString(document.RootElement, "access_token")
+                ?? throw new InvalidOperationException("Walmart token response did not include access_token.");
+
+            var expiresInSeconds = FindInt(document.RootElement, "expires_in") ?? 900;
+            _accessTokenExpiresUtc = DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds);
+
+            return _accessToken;
         }
-
-        using var document = JsonDocument.Parse(content);
-        _accessToken = FindString(document.RootElement, "access_token")
-            ?? throw new InvalidOperationException("Walmart token response did not include access_token.");
-
-        var expiresInSeconds = FindInt(document.RootElement, "expires_in") ?? 900;
-        _accessTokenExpiresUtc = DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds);
-
-        return _accessToken;
+        finally
+        {
+            _tokenRefreshLock.Release();
+        }
     }
 
     private static string? FindString(JsonElement element, string propertyName)
