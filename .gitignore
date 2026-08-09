@@ -29,6 +29,7 @@ appsettings.*.json
 # User data
 *.csv
 !sample-inventory.csv
+!sample-walmart-monitor.csv
 
 # OS
 .DS_Store

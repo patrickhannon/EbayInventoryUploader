@@ -18,6 +18,7 @@ class Program
             .Build();
 
         var ebayConfig = configuration.GetSection("EbayApi").Get<EbayApiConfig>();
+        var walmartConfig = configuration.GetSection("WalmartApi").Get<WalmartApiConfig>() ?? new WalmartApiConfig();
         
         if (ebayConfig == null)
         {
@@ -42,6 +43,8 @@ class Program
         // Create HTTP client and API client
         using var httpClient = new HttpClient();
         var apiClient = new EbayApiClient(httpClient, ebayConfig);
+        var walmartApiClient = new WalmartApiClient(httpClient, walmartConfig);
+        var walmartMonitorService = new WalmartBuyBoxMonitorService(walmartApiClient, walmartConfig);
 
         // Display menu
         while (true)
@@ -51,7 +54,8 @@ class Program
             Console.WriteLine("2. Upload from CSV file");
             Console.WriteLine("3. Verify item before upload");
             Console.WriteLine("4. Test sample item");
-            Console.WriteLine("5. Exit");
+            Console.WriteLine("5. Monitor Walmart buy box");
+            Console.WriteLine("6. Exit");
             Console.Write("\nSelect option: ");
 
             var choice = Console.ReadLine();
@@ -71,6 +75,9 @@ class Program
                     await TestSampleItem(apiClient, ebayConfig);
                     break;
                 case "5":
+                    await MonitorWalmartBuyBox(walmartMonitorService);
+                    break;
+                case "6":
                     Console.WriteLine("\nGoodbye!");
                     return;
                 default:
@@ -249,6 +256,94 @@ class Program
         {
             Console.WriteLine("Cancelled.");
             return;
+        }
+
+        static async Task MonitorWalmartBuyBox(WalmartBuyBoxMonitorService walmartMonitorService)
+        {
+            Console.WriteLine("\n=== Walmart Buy Box Monitor ===");
+
+            if (!walmartMonitorService.IsConfigured)
+            {
+                Console.WriteLine("Walmart API credentials are not configured.");
+                Console.WriteLine("Update the WalmartApi section in appsettings.json before running this workflow.");
+                Console.WriteLine("You need a Walmart Marketplace client ID and client secret with Buy Box report access.");
+                return;
+            }
+
+            Console.Write("Optional CSV file path with SKUs or Walmart Item IDs to filter (press Enter for all): ");
+            var filterPath = Console.ReadLine();
+
+            IReadOnlyList<string> skuFilter = Array.Empty<string>();
+            if (!string.IsNullOrWhiteSpace(filterPath))
+            {
+                if (!File.Exists(filterPath))
+                {
+                    Console.WriteLine("Filter CSV file not found.");
+                    return;
+                }
+
+                skuFilter = walmartMonitorService.LoadSkuFilterFromCsv(filterPath);
+                Console.WriteLine($"Loaded {skuFilter.Count} SKU filters.");
+            }
+
+            try
+            {
+                Console.WriteLine("Requesting Walmart Buy Box report...");
+                var results = await walmartMonitorService.MonitorAsync(skuFilter);
+
+                if (results.Count == 0)
+                {
+                    Console.WriteLine("No Walmart Buy Box rows matched your request.");
+                    return;
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("SKU".PadRight(20) +
+                                  "Current".PadRight(12) +
+                                  "Buy Box".PadRight(12) +
+                                  "Gap".PadRight(10) +
+                                  "Winner".PadRight(10) +
+                                  "Alert");
+                Console.WriteLine(new string('-', 76));
+
+                foreach (var result in results)
+                {
+                    var currentLanded = result.CurrentPrice + result.CurrentShippingPrice;
+                    var buyBoxLanded = result.BuyBoxPrice + result.BuyBoxShippingPrice;
+
+                    Console.WriteLine(result.Sku.PadRight(20) +
+                                      $"${currentLanded:F2}".PadRight(12) +
+                                      $"${buyBoxLanded:F2}".PadRight(12) +
+                                      $"{result.PriceGap:F2}".PadRight(10) +
+                                      (result.OwnsBuyBox ? "Yes" : "No").PadRight(10) +
+                                      result.AlertState);
+
+                    if (!string.IsNullOrWhiteSpace(result.Recommendation))
+                    {
+                        Console.WriteLine($"   {result.Recommendation}");
+                    }
+                }
+
+                var alertCount = results.Count(result => result.AlertState is "LostBuyBox" or "BelowFloor");
+                Console.WriteLine($"\nChecked {results.Count} Walmart items. Alerts: {alertCount}.");
+
+                Console.Write("Export results to CSV? (y/n): ");
+                if (Console.ReadLine()?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    Console.Write("Enter export file path: ");
+                    var exportPath = Console.ReadLine();
+
+                    if (!string.IsNullOrWhiteSpace(exportPath))
+                    {
+                        walmartMonitorService.ExportResultsToCsv(results, exportPath);
+                        Console.WriteLine($"Saved Walmart monitoring results to: {exportPath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Walmart monitoring failed: {ex.Message}");
+            }
         }
 
         try
