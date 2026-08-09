@@ -6,7 +6,7 @@ using MarketplaceInventoryManager.Models;
 
 namespace MarketplaceInventoryManager.Services;
 
-public class WalmartApiClient
+public class WalmartApiClient : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly WalmartApiConfig _config;
@@ -265,4 +265,6 @@ public class WalmartApiClient
         return actualHost.Equals(normalizedAllowedHost, StringComparison.OrdinalIgnoreCase) ||
                actualHost.EndsWith($".{normalizedAllowedHost}", StringComparison.OrdinalIgnoreCase);
     }
+
+    public void Dispose() => _tokenRefreshLock.Dispose();
 }

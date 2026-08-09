@@ -48,7 +48,7 @@ class Program
         using var httpClient = new HttpClient();
         using var walmartHttpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
         var apiClient = new EbayApiClient(httpClient, ebayConfig);
-        var walmartApiClient = new WalmartApiClient(walmartHttpClient, walmartConfig);
+        using var walmartApiClient = new WalmartApiClient(walmartHttpClient, walmartConfig);
         var walmartMonitorService = new WalmartBuyBoxMonitorService(walmartApiClient, walmartConfig);
 
         // Display menu
