@@ -154,18 +154,21 @@ public class WalmartBuyBoxMonitorService
         var maximumDropAmount = sellerLandedPrice > 0
             ? sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m)
             : decimal.MaxValue;
+        var isPricedAboveBuyBox = sellerLandedPrice > buyBoxLandedPrice;
         var wouldExceedMaxDrop = sellerLandedPrice > 0 &&
                                  sellerLandedPrice - recommendedLandedPrice > maximumDropAmount;
         var recommendedItemPrice = Math.Max(0m, recommendedLandedPrice - row.SellerShippingPrice);
 
-        result.RecommendedPrice = _config.RecommendPriceChanges && !wouldExceedMaxDrop
+        result.RecommendedPrice = _config.RecommendPriceChanges && isPricedAboveBuyBox && !wouldExceedMaxDrop
             ? recommendedItemPrice
             : null;
 
         result.AlertState = "LostBuyBox";
         result.Recommendation = result.RecommendedPrice.HasValue
             ? $"Consider reviewing item price toward {result.RecommendedPrice.Value:F2} with current shipping unchanged."
-            : "You lost the buy box; review price or fulfillment settings before repricing.";
+            : isPricedAboveBuyBox
+                ? "You lost the buy box; review price or fulfillment settings before repricing."
+                : "You lost the buy box even though your landed price is already competitive; review fulfillment or listing quality.";
 
         return result;
     }

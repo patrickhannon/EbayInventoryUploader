@@ -178,7 +178,7 @@ public class EbayApiClient
             }
 
             var ns = doc.Root.GetDefaultNamespace();
-            var itemId = doc.Root?.Element(ns + "ItemID")?.Value ?? string.Empty;
+            var itemId = doc.Root.Element(ns + "ItemID")?.Value ?? string.Empty;
             return itemId;
         }
         catch
@@ -199,7 +199,7 @@ public class EbayApiClient
 
             var ns = doc.Root.GetDefaultNamespace();
             
-            var errors = doc.Root?.Element(ns + "Errors");
+            var errors = doc.Root.Element(ns + "Errors");
             if (errors != null)
             {
                 var shortMsg = errors.Element(ns + "ShortMessage")?.Value ?? "";
@@ -231,7 +231,7 @@ public class EbayApiClient
             }
 
             var ns = doc.Root.GetDefaultNamespace();
-            var ack = doc.Root?.Element(ns + "Ack")?.Value ?? string.Empty;
+            var ack = doc.Root.Element(ns + "Ack")?.Value ?? string.Empty;
             return ack == "Success" || ack == "Warning";
         }
         catch
