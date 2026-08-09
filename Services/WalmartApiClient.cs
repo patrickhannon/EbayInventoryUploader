@@ -100,6 +100,24 @@ public class WalmartApiClient
         await AddMarketplaceHeadersAsync(request, cancellationToken);
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (IsRedirect(response) && response.Headers.Location != null)
+        {
+            var redirectUri = response.Headers.Location.IsAbsoluteUri
+                ? response.Headers.Location
+                : new Uri(new Uri(_config.BaseUrl.TrimEnd('/') + "/"), response.Headers.Location);
+
+            using var redirectedRequest = new HttpRequestMessage(HttpMethod.Get, redirectUri);
+            using var redirectedResponse = await _httpClient.SendAsync(redirectedRequest, cancellationToken);
+            var redirectedContent = await redirectedResponse.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!redirectedResponse.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"Walmart redirected report download failed: {(int)redirectedResponse.StatusCode} {redirectedResponse.ReasonPhrase} - {redirectedContent}");
+            }
+
+            return redirectedContent;
+        }
+
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -206,5 +224,11 @@ public class WalmartApiClient
         return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : null;
+    }
+
+    private static bool IsRedirect(HttpResponseMessage response)
+    {
+        var statusCode = (int)response.StatusCode;
+        return statusCode is 301 or 302 or 303 or 307 or 308;
     }
 }
