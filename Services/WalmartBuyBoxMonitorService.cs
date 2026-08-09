@@ -150,7 +150,7 @@ public class WalmartBuyBoxMonitorService
             return result;
         }
 
-        var recommendedLandedPrice = Math.Max(_config.MinimumAllowedPrice, buyBoxLandedPrice);
+        var recommendedLandedPrice = buyBoxLandedPrice;
         var maximumDropAmount = sellerLandedPrice > 0
             ? sellerLandedPrice * (_config.MaximumPriceDropPercent / 100m)
             : decimal.MaxValue;
@@ -164,7 +164,7 @@ public class WalmartBuyBoxMonitorService
 
         result.AlertState = "LostBuyBox";
         result.Recommendation = result.RecommendedPrice.HasValue
-            ? $"Consider reviewing item price toward ${result.RecommendedPrice.Value:F2} with current shipping unchanged."
+            ? $"Consider reviewing item price toward {result.RecommendedPrice.Value:F2} with current shipping unchanged."
             : "You lost the buy box; review price or fulfillment settings before repricing.";
 
         return result;

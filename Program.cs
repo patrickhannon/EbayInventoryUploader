@@ -343,8 +343,8 @@ class Program
                 var buyBoxLanded = result.BuyBoxPrice + result.BuyBoxShippingPrice;
 
                 Console.WriteLine(result.Sku.PadRight(20) +
-                                  $"${currentLanded:F2}".PadRight(12) +
-                                  $"${buyBoxLanded:F2}".PadRight(12) +
+                                  $"{currentLanded:F2}".PadRight(12) +
+                                  $"{buyBoxLanded:F2}".PadRight(12) +
                                   $"{result.PriceGap:F2}".PadRight(10) +
                                   (result.OwnsBuyBox ? "Yes" : "No").PadRight(10) +
                                   result.AlertState);
@@ -358,16 +358,19 @@ class Program
             var alertCount = results.Count(result => result.AlertState is "LostBuyBox" or "BelowFloor");
             Console.WriteLine($"\nChecked {results.Count} Walmart items. Alerts: {alertCount}.");
 
-            Console.Write("Export results to CSV? (y/n): ");
-            if (Console.ReadLine()?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true)
+            if (!Console.IsInputRedirected)
             {
-                Console.Write("Enter export file path: ");
-                var exportPath = Console.ReadLine();
-
-                if (!string.IsNullOrWhiteSpace(exportPath))
+                Console.Write("Export results to CSV? (y/n): ");
+                if (Console.ReadLine()?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true)
                 {
-                    walmartMonitorService.ExportResultsToCsv(results, exportPath);
-                    Console.WriteLine($"Saved Walmart monitoring results to: {exportPath}");
+                    Console.Write("Enter export file path: ");
+                    var exportPath = Console.ReadLine();
+
+                    if (!string.IsNullOrWhiteSpace(exportPath))
+                    {
+                        walmartMonitorService.ExportResultsToCsv(results, exportPath);
+                        Console.WriteLine($"Saved Walmart monitoring results to: {exportPath}");
+                    }
                 }
             }
         }
