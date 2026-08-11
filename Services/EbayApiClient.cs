@@ -1,8 +1,8 @@
 using System.Text;
 using System.Xml.Linq;
-using EbayInventoryUploader.Models;
+using MarketplaceInventoryManager.Models;
 
-namespace EbayInventoryUploader.Services;
+namespace MarketplaceInventoryManager.Services;
 
 public class EbayApiClient
 {
@@ -172,8 +172,13 @@ public class EbayApiClient
         try
         {
             var doc = XDocument.Parse(xmlResponse);
-            var ns = doc.Root?.GetDefaultNamespace();
-            var itemId = doc.Root?.Element(ns + "ItemID")?.Value ?? string.Empty;
+            if (doc.Root == null)
+            {
+                return string.Empty;
+            }
+
+            var ns = doc.Root.GetDefaultNamespace();
+            var itemId = doc.Root.Element(ns + "ItemID")?.Value ?? string.Empty;
             return itemId;
         }
         catch
@@ -187,9 +192,14 @@ public class EbayApiClient
         try
         {
             var doc = XDocument.Parse(xmlResponse);
-            var ns = doc.Root?.GetDefaultNamespace();
+            if (doc.Root == null)
+            {
+                return string.Empty;
+            }
+
+            var ns = doc.Root.GetDefaultNamespace();
             
-            var errors = doc.Root?.Element(ns + "Errors");
+            var errors = doc.Root.Element(ns + "Errors");
             if (errors != null)
             {
                 var shortMsg = errors.Element(ns + "ShortMessage")?.Value ?? "";
@@ -215,8 +225,13 @@ public class EbayApiClient
         try
         {
             var doc = XDocument.Parse(xmlResponse);
-            var ns = doc.Root?.GetDefaultNamespace();
-            var ack = doc.Root?.Element(ns + "Ack")?.Value ?? string.Empty;
+            if (doc.Root == null)
+            {
+                return false;
+            }
+
+            var ns = doc.Root.GetDefaultNamespace();
+            var ack = doc.Root.Element(ns + "Ack")?.Value ?? string.Empty;
             return ack == "Success" || ack == "Warning";
         }
         catch

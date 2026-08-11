@@ -1,9 +1,10 @@
-# eBay Inventory Uploader
+# Marketplace Inventory Manager
 
-A .NET 10 Core console application for uploading inventory items to eBay using the eBay Trading API.
+A .NET 10 console application for marketplace workflows across eBay, Amazon, and Walmart, with implemented support today for eBay listing flows and Walmart Buy Box monitoring.
 
 ## Features
 
+- ✅ Generic marketplace branding and requirements view
 - ✅ Upload single items to eBay
 - ✅ Bulk upload from CSV files
 - ✅ Verify items before listing
@@ -12,6 +13,8 @@ A .NET 10 Core console application for uploading inventory items to eBay using t
 - ✅ Image upload support
 - ✅ SKU and UPC tracking
 - ✅ Sandbox mode for testing
+- ✅ Walmart buy box monitoring via Buy Box reports
+- ✅ Amazon credential checklist for future SP-API integration
 
 ## Prerequisites
 
@@ -46,11 +49,28 @@ Edit `appsettings.json` and replace the placeholder values:
     "DevId": "YourActualDevId",
     "UserToken": "YourActualUserToken",
     "UseSandbox": true
+  },
+  "AmazonApi": {
+    "ClientId": "YourAmazonLwaClientId",
+    "ClientSecret": "YourAmazonLwaClientSecret",
+    "RefreshToken": "YourAmazonRefreshToken",
+    "AwsAccessKeyId": "YourAwsAccessKeyId",
+    "AwsSecretAccessKey": "YourAwsSecretAccessKey",
+    "RoleArn": "YourSellingPartnerRoleArn",
+    "SellerId": "YourAmazonSellerId",
+    "MarketplaceId": "ATVPDKIKX0DER",
+    "RegionEndpoint": "us-east-1"
+  },
+  "WalmartApi": {
+    "ClientId": "YourWalmartClientId",
+    "ClientSecret": "YourWalmartClientSecret",
+    "SellerId": "YourWalmartSellerId",
+    "ConsumerChannelType": "YourWalmartConsumerChannelType"
   }
 }
 ```
 
-**Important:** Set `UseSandbox` to `true` for testing, and `false` for production.
+**Important:** Amazon credentials are documented for future use; Amazon API workflows are not implemented in this repository yet.
 
 ### 3. Build and Run
 
@@ -94,11 +114,35 @@ Item 2,Description 2,39.99,5,11450,SKU002,Los Angeles,90001
 3. Enter the path to your CSV file
 4. The application will upload each item with a 1-second delay between uploads
 
+### Walmart Monitor Filter CSV
+
+Create a CSV file with a single `Sku` or `WalmartItemId` column to limit the report to specific items:
+
+```csv
+Sku
+WM-TEST-SKU-001
+WM-TEST-SKU-002
+```
+
 ### Verify Item Before Listing
 
 1. Select option `3` from the menu
 2. The application will validate your item configuration without actually creating a listing
 3. Use this to test your API credentials and item details
+
+### Monitor Walmart Buy Box
+
+1. Configure the `WalmartApi` section in `appsettings.json`
+2. Select option `5` from the menu
+3. Optionally provide a CSV file containing SKUs or Walmart item IDs to filter against
+4. The application will request a Walmart Buy Box report, wait for it to finish, and print price gaps and alerts
+5. Optionally export the monitoring results to CSV
+
+### Review Marketplace Requirements
+
+1. Select option `6` from the menu
+2. Review required credentials for eBay, Amazon, and Walmart
+3. Confirm Walmart Buy Box report access and pricing guardrails before running price checks
 
 ### Test with Sample Item
 
@@ -148,6 +192,24 @@ Available condition values:
 
 ## Configuration Options
 
+### Walmart Buy Box Monitoring
+
+- `ClientId` / `ClientSecret` - Walmart Marketplace API credentials
+- `SellerId` - Walmart seller identifier used on report requests
+- `ConsumerChannelType` - Walmart consumer channel type/header value issued for your API access
+- `PollIntervalSeconds` - How often to poll report status
+- `MaxPollAttempts` - Maximum number of polling attempts before timeout
+- `MinimumAllowedPrice` - Price floor for alerts and recommendations
+- `MaximumPriceDropPercent` - Largest suggested drop allowed before the app suppresses a recommendation
+- `RecommendPriceChanges` - When `true`, the app suggests a price to review; it never reprices automatically
+- `ReportDownloadAllowedHosts` - Optional allow-list for Walmart report download redirects
+
+The monitor uses Walmart's Buy Box report workflow:
+1. Request a `BUYBOX` report
+2. Poll until the report is ready
+3. Download the CSV report
+4. Evaluate whether you own the buy box and whether the buy box price is under your configured floor
+
 ### Shipping Services (US)
 
 - `USPSPriority` - USPS Priority Mail
@@ -189,19 +251,25 @@ Configure in `InventoryItem.cs`:
 - eBay Trading API: https://developer.ebay.com/Devzone/XML/docs/Reference/eBay/index.html
 - AddItem Call: https://developer.ebay.com/Devzone/XML/docs/Reference/eBay/AddItem.html
 - AddFixedPriceItem: https://developer.ebay.com/Devzone/XML/docs/Reference/eBay/AddFixedPriceItem.html
+- Walmart Buy Box report: https://developer.walmart.com/us-marketplace/docs/request-a-buy-box-insights-report
+- Walmart access token: https://developer.walmart.com/us-marketplace/docs/get-an-access-token
 
 ## Project Structure
 
 ```
-EbayInventoryUploader/
+MarketplaceInventoryManager/
+├── MarketplaceInventoryManager.csproj
 ├── Program.cs                  # Main application entry point
 ├── appsettings.json            # Configuration file
 ├── sample-inventory.csv        # Sample CSV for bulk upload
+├── sample-walmart-monitor.csv  # Sample CSV for Walmart buy box filters
 ├── Models/
 │   ├── InventoryItem.cs        # Inventory item model
-│   └── EbayApiConfig.cs        # API configuration model
+│   └── EbayApiConfig.cs        # eBay API configuration model
 └── Services/
-    └── EbayApiClient.cs        # eBay API client implementation
+    ├── EbayApiClient.cs        # eBay API client implementation
+    ├── WalmartApiClient.cs     # Walmart API/report client implementation
+    └── WalmartBuyBoxMonitorService.cs # Walmart buy box monitoring logic
 ```
 
 ## Security Notes

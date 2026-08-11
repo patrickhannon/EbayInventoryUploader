@@ -1,4 +1,4 @@
-# Quick Start Guide
+# Marketplace Inventory Manager Quick Start Guide
 
 ## 1. Get Your eBay API Credentials
 
@@ -39,9 +39,27 @@ Open `appsettings.json` and update:
     "CertId": "PRD-1234567890123-45678901-2345-6789-0123-4567",
     "DevId": "12345678-9012-3456-7890-123456789012",
     "UserToken": "v^1.1#i^1#p^3#r^1#f^0#I^3#t^Ul4xMF8...(very long token)..."
+  },
+  "AmazonApi": {
+    "ClientId": "YourAmazonLwaClientId",
+    "ClientSecret": "YourAmazonLwaClientSecret",
+    "RefreshToken": "YourAmazonRefreshToken",
+    "AwsAccessKeyId": "YourAwsAccessKeyId",
+    "AwsSecretAccessKey": "YourAwsSecretAccessKey",
+    "RoleArn": "YourSellingPartnerRoleArn",
+    "SellerId": "YourAmazonSellerId",
+    "MarketplaceId": "ATVPDKIKX0DER"
+  },
+  "WalmartApi": {
+    "ClientId": "YourWalmartClientId",
+    "ClientSecret": "YourWalmartClientSecret",
+    "SellerId": "YourWalmartSellerId",
+    "ConsumerChannelType": "YourWalmartConsumerChannelType"
   }
 }
 ```
+
+Use menu option **6** to review the credentials required for eBay, Amazon, and Walmart. Amazon requirements are documented for future integration; only eBay listing and Walmart Buy Box workflows are implemented today.
 
 ## 3. Run the Application
 
@@ -67,6 +85,12 @@ dotnet run
 - Select option **2**
 - Enter the CSV file path
 - All items will be uploaded with 1-second delays
+
+## 6. Check Marketplace Requirements
+
+- Select option **6**
+- Review the required settings for eBay uploads, Amazon credentials, and Walmart Buy Box price checks
+- Confirm Walmart Buy Box report access before running option **5**
 
 ## CSV Template
 
@@ -132,4 +156,4 @@ Or browse: https://www.ebay.com/
 
 ---
 
-**Happy Selling! 🎉**
+**Happy Selling Across Marketplaces! 🎉**
